@@ -4,7 +4,7 @@
 	<head>
 		<meta charset="utf-8">
 
-		<title></title>
+		<title>Dive into Guava</title>
 
 		<meta name="description" content="A framework for easily creating beautiful presentations using HTML">
 		<meta name="author" content="Hakim El Hattab">
@@ -39,31 +39,107 @@
 		<div class="reveal">
 
 			<div class="slides">
-                <!-- Code example
-				<section>
-					<h2>Pretty Code</h2>
-					<pre><code data-trim contenteditable>
-function linkify( selector ) {
-    return 3;
-}
-					</code></pre>
-				</section>
-                -->
-				<section>
-					<h2>Slides title</h2>
-					<p>This is a template for creating new slides</p>
-					<p>
-					</p>
-				</section>
+<section data-markdown>
+  <script type="text/template">
+# Dive into Guava
 
-				<section data-markdown>
-					<script type="text/template">
-## Title in markdown
+<p>Yizhe Tang @ RC.RD meituan</p>
+<p>2015-11-12</p>
+  </script>
+</section>
 
-text
+<section data-markdown>
+  <script type="text/template">
+## Start from "Null"
 
-					</script>
-				</section>
+<blockquote>
+Null is confusing
+</blockquote>
+
+- collection.get(key)
+  - the value is null
+  - not in collection
+- functions
+  - failure
+  - success, just null value
+- for users
+  - NullPointerException
+
+  </script>
+</section>
+
+<section data-markdown>
+  <script type="text/template">
+## Optional<T> from Guava
+
+- Replace a nullable T reference with a non-null value
+  - present: a non-null T reference
+  - absent:  nothing
+
+Why? Explicitly check and get it out. Force to handle absent case
+
+    String result = null;
+
+    // old way
+    result = getSomethingMayReturnNull();
+    if (result == null) // may easily forget
+        result = "default";
+    print(result.toString());
+
+    // with Optional
+    Optional<String> opt = tryToGet();
+    if (opt.isPresent())
+        result = opt.get(); // .get() throw exception if not present
+    else
+        result = "default";
+    print(result.toString());
+
+    // Shorter
+    result = tryToGet().or("default");
+    print(result.toString());
+
+  </script>
+</section>
+
+<section data-markdown>
+  <script type="text/template">
+  </script>
+</section>
+
+<section data-markdown>
+  <script type="text/template">
+  </script>
+</section>
+
+<section data-markdown>
+  <script type="text/template">
+  </script>
+</section>
+
+<section data-markdown>
+  <script type="text/template">
+  </script>
+</section>
+
+<section data-markdown>
+  <script type="text/template">
+  </script>
+</section>
+
+<section data-markdown>
+  <script type="text/template">
+  </script>
+</section>
+
+<section data-markdown>
+  <script type="text/template">
+  </script>
+</section>
+
+<section data-markdown>
+  <script type="text/template">
+  </script>
+</section>
 
 
 

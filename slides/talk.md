@@ -1,15 +1,3 @@
-# Start from "Null"
-
-Null is confusing
-- collection.get(key)
-  - the value is null
-  - not in collection
-- functions
-  - failure
-  - success, just null value
-- for users
-  - NullPointerException
-
 
 # Optional<T>
 
