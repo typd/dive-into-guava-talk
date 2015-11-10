@@ -48,6 +48,19 @@
   </script>
 </section>
 
+<section>
+<h2>Start from "Null"</h2>
+    <pre><code data-trim>
+Map&lt;String, Object&gt; params = parseParam(paramString);
+if (params != null) { // why?
+    String value = params.get(key);
+    if (value != null) // why?
+        doSomething(value);
+}
+    </pre></code>
+
+</section>
+
 <section data-markdown>
   <script type="text/template">
 ## Start from "Null"
@@ -73,8 +86,6 @@ Null is confusing
 ## Optional&lt;T&gt; from Guava
 
 - Replace a nullable T reference with a non-null value
-  - present: a non-null T reference
-  - absent:  nothing
 - Why?
   - Explicitly check and get it out
   - Force to handle absent case
@@ -88,26 +99,26 @@ Null is confusing
     old way
 
     <pre><code data-trim>
-    String result = getSomethingMayReturnNull();
-    if (result == null) // may easily forget
-        result = "default";
-    print(result.toString());
+String result = getSomethingMayReturnNull();
+if (result == null) // may easily forget
+    result = "default";
+print(result.toString());
     </code></pre>
 
     with Optional&lt;T&gt;
 
     <pre><code data-trim>
-    String result = null;
-    Optional&lt;String&gt;  opt = tryToGet();
-    if (opt.isPresent())
-        result = opt.get(); // .get() throw exception if not present
-    else
-        result = "default";
-    print(result.toString());
+String result = null;
+Optional&lt;String&gt;  opt = tryToGet();
+if (opt.isPresent())
+    result = opt.get(); // .get() throw exception if not present
+else
+    result = "default";
+print(result.toString());
 
-    // Shorter
-    String result = tryToGet().or("default");
-    print(result.toString());
+// Shorter
+String result = tryToGet().or("default");
+print(result.toString());
     </code></pre>
 </section>
 
@@ -116,18 +127,18 @@ Null is confusing
 
     Use case in Guava
     <pre><code data-trim>
+// com.google.common.io.File.java
+public Optional&lt;Long&gt; sizeIfKnown()
+
+// com.google.common.net.MediaType.java
+public Optional&lt;Charset&gt; charset()
+
 // com.google.common.base.Enums.java
 public static &lt;T extends Enum&lt;T&gt;&gt; Optional&lt;T&gt;
     getIfPresent(Class&lt;T&gt; enumClass, String value)
 
 // com.google.common.collect.BinaryTreeTraverser.java
 public abstract Optional&lt;T&gt; rightChild(T root);
-
-// com.google.common.io.File.java
-public Optional&lt;Long&gt; sizeIfKnown()
-
-// com.google.common.net.MediaType.java
-public Optional&lt;Charset&gt; charset()
     </code></pre>
 
 Whenever "try to get" something, no guaranteed result
@@ -161,16 +172,18 @@ str = strOpt.orNull();
 <section>
 <h2>Dive into <a href="https://github.com/google/guava/blob/master/guava/src/com/google/common/base/Optional.java">Optional.java</a></h2>
 
+Simplified version
     <pre><code data-trim>
 // abstract, template, serializable class
 public abstract class Optional&lt;T&gt; implements Serializable
+    // static creators
     public static &lt;T&gt; Optional&lt;T&gt; absent() {
         return Absent.withType();
     }
 
     public static &lt;T&gt; Optional&lt;T&gt; of(T reference) {
-        return new Present&lt;T&gt;(checkNotNull(reference));
         // early check, Preconditions.checkNotNull();
+        return new Present&lt;T&gt;(checkNotNull(reference));
     }
     
     public static &lt;T&gt; Optional&lt;T&gt; fromNullable(T nullableReference) {
@@ -251,23 +264,25 @@ final class Absent&lt;T&gt; extends Optional&lt;T&gt; {
 
     @Override
     public boolean isPresent() {
-      return false;
+        return false;
     }
 
     @Override
     public T get() {
-        // indicates programming error
-        throw new IllegalStateException("Optional.get() cannot be called on an absent value");
+        // indicates programming error, fail fast
+        throw new IllegalStateException(
+            "Optional.get() cannot be called on an absent value");
     }
 
     @Override
     public T or(T defaultValue) {
-        return checkNotNull(defaultValue, "use Optional.orNull() instead of Optional.or(null)");
+        return checkNotNull(defaultValue,
+            "use Optional.orNull() instead of Optional.or(null)");
     }
 
     @Override
     public T orNull() {
-      return null;
+        return null;
     }
 }
     </code></pre>
@@ -275,10 +290,12 @@ final class Absent&lt;T&gt; extends Optional&lt;T&gt; {
 
 <section>
     <h2>Null pattern</h2>
-    <img src="./img/null-pattern.png" />
-    <br/>
 
+<blockquote>
 To avoid unpleasent null checks, a replacement offers "do nothing behavior"
+</blockquote>
+
+<img src="./img/null-pattern.png" />
 <br/>
 
     <pre><code data-trim>
@@ -288,10 +305,10 @@ if (client != null)
     client.send();
 
 // with "null pattern"
-
 // inject a DumbMetricsClient (extends MetricsClient) for non-prod envs
 @Autowired
 MetricsClient client;
+// do real job or nothing
 client.send();
     </code></pre>
 </section>
@@ -300,6 +317,7 @@ client.send();
     <h2>The other example: Joiner</h2>
     <pre><code data-trim>
 Joiner.on("|").skipNulls().join("1", null, "3"); // "1|3"
+
 Joiner.on("|").useForNull("*").join("1", null, "3"); // "1|*|3"
     </code></pre>
 </section>
@@ -320,18 +338,18 @@ Joiner.on("|").useForNull("*").join("1", null, "3"); // "1|*|3"
 public class Joiner {
     private final String separator;
 
+    // constructors
     private Joiner(String separator) { // hide constructor
         this.separator = checkNotNull(separator);
     }
-
     private Joiner(Joiner prototype) {
       this.separator = prototype.separator;
     }
-
     public static Joiner on(String separator) {
         return new Joiner(separator);
     }
 
+    // action
     public final String join(Iterator&lt;?&gt; parts) {
         return appendTo(new StringBuilder(), parts).toString();
     }
@@ -365,66 +383,109 @@ public class Joiner {
 </section>
 
 <section>
-    <h2></h2>
+    <h2>Dive into <a href="https://github.com/google/guava/blob/master/guava/src/com/google/common/base/Joiner.java">Joiner.java</a></h2>
     <pre><code data-trim>
+public class Joiner {
+    ...
+
+    public Joiner useForNull(final String nullText) {
+        checkNotNull(nullText);
+        // anonymous class, many functional programming are done through this
+        return new Joiner(this) {
+            @Override
+            CharSequence toString(Object part) {
+                return (part == null) ? nullText : Joiner.this.toString(part);
+            }
+
+            @Override
+            public Joiner useForNull(String nullText) {
+                // can't do this then 
+                throw new UnsupportedOperationException("already specified useForNull");
+            }
+
+            @Override
+            public Joiner skipNulls() {
+                // can't do this then 
+                throw new UnsupportedOperationException("already specified useForNull");
+            }
+        };
+    }
+
+    ...
+}
     </code></pre>
 </section>
 
 <section>
-    <h2></h2>
+    <h2>Dive into <a href="https://github.com/google/guava/blob/master/guava/src/com/google/common/base/Joiner.java">Joiner.java</a></h2>
     <pre><code data-trim>
+public class Joiner {
+    ...
+
+    public Joiner skipNulls() {
+        return new Joiner(this) {
+            @Override
+            public &lt;A extends Appendable&gt; A appendTo(A appendable, Iterator&lt;?&gt; parts)
+                    throws IOException {
+                checkNotNull(appendable, "appendable");
+                checkNotNull(parts, "parts");
+                while (parts.hasNext()) {
+                    Object part = parts.next();
+                    if (part != null) {
+                        appendable.append(Joiner.this.toString(part));
+                        break;
+                    }
+                }
+                while (parts.hasNext()) {
+                  Object part = parts.next();
+                  if (part != null) {
+                      appendable.append(separator);
+                      appendable.append(Joiner.this.toString(part));
+                  }
+                }
+                return appendable;
+            }
+
+            @Override
+            public Joiner useForNull(String nullText) {
+                throw new UnsupportedOperationException(
+                    "already specified skipNulls");
+            }
+        };
+    }
+
+    ...
+}
     </code></pre>
 </section>
 
 <section>
-    <h2></h2>
-    <pre><code data-trim>
-    </code></pre>
-</section>
+    <h2>Decorator pattern</h2>
 
-<section>
-    <h2></h2>
-    <pre><code data-trim>
-    </code></pre>
-</section>
+<blockquote>
+Extend the functionality of a certain object statically, or at run-time, independently of other instances of the same class
+</blockquote>
 
-<section>
-    <h2></h2>
-    <pre><code data-trim>
-    </code></pre>
+<img src="./img/decorator2.png" />
 </section>
 
 <section data-markdown>
   <script type="text/template">
+## Other goods
+
+- Guava
+  - Strings
+  - Cache
+  - Collections
+- JodaTime
   </script>
 </section>
 
 <section data-markdown>
   <script type="text/template">
+# Q & A
   </script>
 </section>
-
-<section data-markdown>
-  <script type="text/template">
-  </script>
-</section>
-
-<section data-markdown>
-  <script type="text/template">
-  </script>
-</section>
-
-<section data-markdown>
-  <script type="text/template">
-  </script>
-</section>
-
-<section data-markdown>
-  <script type="text/template">
-  </script>
-</section>
-
-
 
 			</div>
 
